@@ -203,8 +203,8 @@ table.rank{width:100%;border-collapse:collapse;font-size:13px}
 .sk-line{height:20px;width:55%}
 .footnote{text-align:center;color:var(--muted);font-size:11px;margin-top:32px;padding-top:18px;border-top:1px solid var(--line)}
 
-@media(max-width:1200px){.kpi-row{grid-template-columns:repeat(3,1fr)}.two-col{grid-template-columns:1fr}}
-@media(max-width:700px){.topbar{flex-direction:column;gap:10px;padding:14px 16px}.wrap{padding:16px 14px 40px}.kpi-row{grid-template-columns:repeat(2,1fr)}.criteria-grid{grid-template-columns:repeat(5,1fr)}}
+@media(max-width:1200px){.kpi-row{grid-template-columns:repeat(2,1fr)!important}.two-col{grid-template-columns:1fr}}
+@media(max-width:700px){.topbar{flex-direction:column;gap:10px;padding:14px 16px}.wrap{padding:16px 14px 40px}.kpi-row{grid-template-columns:repeat(2,1fr)!important}.criteria-grid{grid-template-columns:repeat(5,1fr)}}
 </style>
 </head>
 <body>
@@ -257,9 +257,14 @@ table.rank{width:100%;border-collapse:collapse;font-size:13px}
     <div><div style="font-weight:600">Błąd połączenia z Supabase</div><div id="errorBody" style="font-size:12px;margin-top:2px">—</div></div>
   </div>
 
-  <!-- 3 KPI -->
-  <div class="kpi-row">
-    <div class="kpi"><div class="label">Rozmowy</div><div class="value num" id="kpiContacts"><span class="skeleton sk-line"></span></div><div class="kpi-sub" id="kpiContactsSub">w wybranym okresie</div><svg class="spark" viewBox="0 0 64 24" fill="none" id="sparkContacts"></svg></div>
+  <!-- KPI ROW 1 — статистика дзвінків -->
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
+    <div class="kpi"><div class="label">Wszystkie połączenia</div><div class="value num" id="kpiAllCalls"><span class="skeleton sk-line"></span></div><div class="kpi-sub" id="kpiAllCallsSub">łącznie z krótkimi i nieudanymi</div><svg class="spark" viewBox="0 0 64 24" fill="none" id="sparkAllCalls"></svg></div>
+    <div class="kpi k-hot"><div class="label">Rozmowy ≥ 1 min</div><div class="value num" id="kpiContacts"><span class="skeleton sk-line"></span></div><div class="kpi-sub" id="kpiContactsSub">oceniane przez AI</div><svg class="spark" viewBox="0 0 64 24" fill="none" id="sparkContacts"></svg></div>
+    <div class="kpi k-action"><div class="label">Skuteczność dodzwonienia</div><div class="value num" id="kpiSuccessRate"><span class="skeleton sk-line"></span></div><div class="kpi-sub" id="kpiSuccessRateSub">rozmów ≥1 min z wszystkich</div></div>
+  </div>
+  <!-- KPI ROW 2 — якість -->
+  <div class="kpi-row" style="grid-template-columns:repeat(2,1fr);margin-bottom:24px">
     <div class="kpi k-score"><div class="label">Średnia ocena</div><div class="value num" id="kpiAvgScore"><span class="skeleton sk-line"></span></div><div class="kpi-sub" id="kpiAvgScoreSub">—</div><svg class="spark" viewBox="0 0 64 24" fill="none" id="sparkScore"></svg></div>
     <div class="kpi k-comp"><div class="label">Zgodność skryptu</div><div class="value num" id="kpiCompliance"><span class="skeleton sk-line"></span></div><div class="kpi-sub" id="kpiComplianceSub">średnia zespołu</div><svg class="spark" viewBox="0 0 64 24" fill="none" id="sparkCompliance"></svg></div>
   </div>
@@ -311,7 +316,7 @@ const TABLE='recruitment_calls';
 const AUTO_REFRESH_MS=5*60*1000;
 const CRIT_NAMES=['Przywitanie','Struktura','Dokumenty','Doświadczenie','Referrals','Firma','Wakat','Odpowiedzi','Obiekcje','Zamknięcie'];
 
-const state={allCalls:[],filteredCalls:[],dateRange:'today',customFrom:null,customTo:null};
+const state={allCalls:[],allCallsInRange:[],filteredCalls:[],dateRange:'today',customFrom:null,customTo:null};
 
 /* ── FETCH ── */
 async function fetchCalls(){
@@ -341,11 +346,19 @@ function applyFilter(){
     if(state.customFrom)from=new Date(state.customFrom+'T00:00:00');
     if(state.customTo)to=new Date(state.customTo+'T23:59:59');
   }
+  // Всі дзвінки в діапазоні (включно з короткими <1хв) — для статистики
+  state.allCallsInRange=state.allCalls.filter(c=>{
+    const d=new Date(c.call_date);
+    if(from&&d<from)return false;
+    if(to&&d>to)return false;
+    return true;
+  });
   state.filteredCalls=state.allCalls.filter(c=>{
     const d=new Date(c.call_date);
     if(from&&d<from)return false;
     if(to&&d>to)return false;
-    // тільки дзвінки >= 1 хвилини
+    // виключаємо невдалі/короткі дзвінки
+    if(c.skip===true)return false;
     if(c.call_duration_sec&&c.call_duration_sec<60)return false;
     return true;
   });
@@ -388,15 +401,33 @@ function renderSpark(id,vals,color){
 
 /* ── KPI ── */
 function renderKPI(){
-  const calls=state.filteredCalls,total=calls.length,scored=calls.filter(c=>c.score>0).length;
+  const allInRange=state.allCallsInRange||[];
+  const calls=state.filteredCalls; // ≥1 хв, без skip
+  const totalAll=allInRange.length;
+  const evaluated=calls.length;
+  const pct=totalAll>0?Math.round(evaluated/totalAll*100):0;
+  const pctColor=pct>=60?'#059669':pct>=40?'#D97706':'#DC2626';
+  const scored=calls.filter(c=>c.score>0).length;
   const aScore=avg(calls,'score'),aComp=avg(calls,'script_compliance');
 
-  document.getElementById('kpiContacts').textContent=total;
-  document.getElementById('kpiContactsSub').textContent='w wybranym okresie (≥1 min)';
+  // Блок 1 — всі дзвінки
+  document.getElementById('kpiAllCalls').textContent=totalAll;
+  document.getElementById('kpiAllCallsSub').textContent='łącznie z krótkimi i nieudanymi';
+
+  // Блок 2 — дзвінки ≥1 хв
+  document.getElementById('kpiContacts').textContent=evaluated;
+  document.getElementById('kpiContactsSub').textContent='oceniane przez AI';
+
+  // Блок 3 — % успішності
+  document.getElementById('kpiSuccessRate').innerHTML=`${pct}<span class="unit">%</span>`;
+  document.getElementById('kpiSuccessRateSub').innerHTML=`<span style="color:${pctColor};font-weight:700">${evaluated} z ${totalAll}</span> rozmów ≥1 min`;
+
+  // Якість
   document.getElementById('kpiAvgScore').innerHTML=aScore==null?'—':`${fmt(aScore,1)}<span class="unit">/10</span>`;
   document.getElementById('kpiAvgScoreSub').textContent=`z ${scored} ocenionych`;
   document.getElementById('kpiCompliance').innerHTML=aComp==null?'—':`${fmt(aComp,0)}<span class="unit">%</span>`;
 
+  renderSpark('sparkAllCalls',sparkSeries(allInRange,'count'),'#64748B');
   renderSpark('sparkContacts',sparkSeries(calls,'count'),'#8B1A2F');
   renderSpark('sparkScore',sparkSeries(calls,'score'),'#10B981');
   renderSpark('sparkCompliance',sparkSeries(calls,'comp'),'#8B5CF6');
@@ -529,7 +560,7 @@ function renderCalls(){
     </div>`;
   }).join('');
 
-  meta.textContent=`${list.length} rozmów (≥1 min) · ${list.length===state.allCalls.filter(c=>c.call_duration_sec&&c.call_duration_sec<60).length?'':''} sortowane od najnowszej`;
+  meta.textContent=`${list.length} rozmów (≥1 min) · ${(state.allCallsInRange||[]).length} wszystkich · sortowane od najnowszej`;
 }
 
 /* ── EXPAND/COLLAPSE ── */
