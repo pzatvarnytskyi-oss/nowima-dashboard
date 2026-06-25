@@ -275,8 +275,7 @@ table.rank{width:100%;border-collapse:collapse;font-size:13px}
       <div class="panel-head"><h3>Ranking rekruterów</h3><div class="meta" id="rankingMeta">sortowanie wg oceny</div></div>
       <div class="panel-body">
         <table class="rank">
-          <thead><tr><th style="width:22px"></th><th>Rekruter</th><th class="r">Rozmowy</th><th class="r">Śr. ocena</th><th class="r">Skrypt %</th></tr></thead>
-          <tbody id="rankingBody"><tr><td colspan="5" class="empty-state" style="padding:24px 0">Ładowanie...</td></tr></tbody>
+          <thead><tr><th style="width:22px"></th><th>Rekruter</th><th class="r">Rozmowy</th><th class="r">Czas</th><th class="r">Śr. ocena</th><th class="r">Skrypt %</th></tr></thead>          <tbody id="rankingBody"><tr><td colspan="5" class="empty-state" style="padding:24px 0">Ładowanie...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -437,10 +436,15 @@ function renderKPI(){
 function renderRanking(){
   const byR={};
   state.filteredCalls.forEach(c=>{const n=c.recruiter_name||'Unknown';if(!byR[n])byR[n]={name:n,calls:[]};byR[n].calls.push(c)});
-  const rows=Object.values(byR).map(r=>({name:r.name,count:r.calls.length,aS:avg(r.calls,'score'),aC:avg(r.calls,'script_compliance')}))
-    .filter(r=>r.name!=='Unknown'||Object.keys(byR).length===1).sort((a,b)=>(b.aS||0)-(a.aS||0)).slice(0,10);
+  const rows=Object.values(byR).map(r=>{
+    const totalSec=r.calls.reduce((s,c)=>s+(parseInt(c.call_duration_sec)||0),0);
+    const h=Math.floor(totalSec/3600);
+    const m=Math.floor((totalSec%3600)/60);
+    const timeStr=h>0?`${h}g ${m}m`:`${m}m`;
+    return{name:r.name,count:r.calls.length,aS:avg(r.calls,'score'),aC:avg(r.calls,'script_compliance'),totalSec,timeStr};
+  }).filter(r=>r.name!=='Unknown'||Object.keys(byR).length===1).sort((a,b)=>(b.aS||0)-(a.aS||0)).slice(0,10);
   const tb=document.getElementById('rankingBody');
-  if(!rows.length){tb.innerHTML='<tr><td colspan="5" class="empty-state" style="padding:24px 0">Brak danych</td></tr>';return}
+  if(!rows.length){tb.innerHTML='<tr><td colspan="6" class="empty-state" style="padding:24px 0">Brak danych</td></tr>';return}
   tb.innerHTML=rows.map((r,i)=>{
     const cls=spc(r.aS),bw=r.aC==null?0:Math.min(100,Math.round(r.aC));
     const bc=bw>=70?'linear-gradient(90deg,#059669,#10B981)':bw>=50?'linear-gradient(90deg,#D97706,#F59E0B)':'linear-gradient(90deg,#B91C1C,#DC2626)';
@@ -448,6 +452,7 @@ function renderRanking(){
       <td><span class="${i===0?'rank-num gold':'rank-num'}">${String(i+1).padStart(2,'0')}</span></td>
       <td><div class="rec-cell"><div class="ava ${avar(r.name)}">${ini(r.name).toUpperCase()}</div><div><div class="rec-name">${esc(r.name)}</div><div class="rec-sub">${r.count} rozmów</div></div></div></td>
       <td class="r num">${r.count}</td>
+      <td class="r"><span style="font-size:12px;font-weight:600;color:var(--ink-2)">${r.timeStr}</span></td>
       <td class="r">${r.aS==null?'—':`<span class="score-pill ${cls}">${fmt(r.aS,1)}</span>`}</td>
       <td class="r"><div class="bar-cell"><div class="bar-track"><div class="bar-fill" style="width:${bw}%;background:${bc}"></div></div><span class="num" style="font-size:12px;font-weight:600">${r.aC==null?'—':bw+'%'}</span></div></td>
     </tr>`;
