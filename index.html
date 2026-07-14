@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NOWIMA · Dashboard Rekrutacji v2.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7F4F5;--surface:#FFFFFF;--ink:#1A0A0F;--ink-2:#3D2730;--muted:#7A5862;
+  --line:#EDE3E6;--line-2:#F5EEF0;--primary:#8B1A2F;--primary-soft:#FDF4F5;--primary-deep:#5C0F1B;
+  --success:#059669;--warning:#D97706;--danger:#DC2626;--accent:#8B5CF6;
+  --shadow-sm:0 1px 3px rgba(92,15,27,.06),0 1px 2px rgba(92,15,27,.04);
+  --shadow-md:0 4px 6px rgba(92,15,27,.05),0 10px 30px rgba(92,15,27,.08);
+  --shadow-lg:0 8px 16px rgba(92,15,27,.08),0 20px 48px rgba(92,15,27,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);font-family:'Manrope',system-ui,sans-serif;color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'NOWIMA';position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-12deg);font-size:clamp(160px,20vw,340px);font-weight:800;color:rgba(92,15,27,.022);letter-spacing:-.04em;pointer-events:none;z-index:0;user-select:none;white-space:nowrap;font-family:'Manrope',sans-serif}
+.topbar,.wrap{position:relative;z-index:1}
+.num{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+
+/* TOPBAR */
+.topbar{background:linear-gradient(135deg,#4A0B16 0%,#6B1124 40%,#5C0F1B 100%);color:#FFF5F7;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #8B1A2F;box-shadow:0 2px 16px rgba(92,15,27,.35)}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{padding:5px 13px;border:2px solid rgba(255,245,247,.7);border-radius:6px;font-weight:800;font-size:15px;color:#FFF5F7;letter-spacing:.1em}
+.brand-text .b1{font-weight:700;font-size:14px;color:#FFF5F7}
+.brand-text .b2{font-size:11px;color:rgba(255,245,247,.6);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:20px}
+.pill{background:rgba(255,245,247,.15);color:#FFF5F7;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.pill.live::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:#34D399;margin-right:5px;vertical-align:middle;animation:pulse 1.6s infinite}
+.pill.error{background:rgba(239,68,68,.2);color:#FCA5A5}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.refresh-btn{background:rgba(255,245,247,.12);color:#FFF5F7;border:1px solid rgba(255,245,247,.25);padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.refresh-btn:hover{background:rgba(255,245,247,.22);transform:translateY(-1px)}
+
+/* LAYOUT */
+.wrap{max-width:1360px;margin:0 auto;padding:28px 32px 56px}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px;position:relative}
+.page-head h1{font-size:26px;font-weight:800;margin-bottom:3px;letter-spacing:-.025em;background:linear-gradient(135deg,#1A0A0F 0%,#5C0F1B 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.page-head .sub{color:var(--muted);font-size:12px;font-weight:500}
+.tabs{display:flex;gap:3px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;box-shadow:var(--shadow-sm)}
+.tab{padding:7px 15px;border-radius:7px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.tab:hover{color:var(--primary);background:var(--primary-soft)}
+.tab.active{background:linear-gradient(135deg,#8B1A2F,#5C0F1B);color:white;box-shadow:0 2px 8px rgba(92,15,27,.3)}
+
+/* DATE POPUP */
+.date-popup{position:absolute;right:0;top:calc(100% + 8px);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);padding:18px;display:none;z-index:1000;min-width:300px}
+.date-popup.show{display:block}
+.date-popup-row{display:flex;gap:10px;margin-bottom:14px}
+.date-popup-field{flex:1}
+.date-popup-field label{display:block;font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.date-popup-field input[type="date"]{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;color:var(--ink);background:white;outline:none}
+.date-popup-field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(139,26,47,.1)}
+.date-popup-actions{display:flex;gap:8px;justify-content:flex-end}
+.date-btn{padding:7px 14px;border-radius:7px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border:1px solid transparent;transition:.15s}
+.date-btn-sec{background:transparent;color:var(--muted);border-color:var(--line)}
+.date-btn-pri{background:linear-gradient(135deg,#8B1A2F,#5C0F1B);color:white}
+
+/* ERROR */
+.error-banner{background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;padding:12px 16px;border-radius:10px;margin-bottom:20px;display:none;align-items:center;gap:10px;font-size:13px}
+.error-banner.show{display:flex}
+.error-banner .e-icon{width:22px;height:22px;background:#DC2626;color:white;border-radius:5px;display:grid;place-items:center;font-weight:700;font-size:12px;flex-shrink:0}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 18px 18px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm);transition:transform .18s,box-shadow .18s}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--primary)}
+.kpi.k-score::before{background:linear-gradient(180deg,#10B981,#047857)}
+.kpi.k-comp::before{background:linear-gradient(180deg,#8B5CF6,#6D28D9)}
+.kpi.k-hot::before{background:linear-gradient(180deg,#F59E0B,#D97706)}
+.kpi.k-action::before{background:linear-gradient(180deg,#EF4444,#B91C1C)}
+.kpi .label{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;margin-bottom:10px}
+.kpi .value{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1;color:var(--ink)}
+.kpi .value .unit{font-size:16px;color:var(--muted);font-weight:500;margin-left:2px}
+.kpi .kpi-sub{margin-top:8px;font-size:11.5px;color:var(--muted);font-weight:500}
+.spark{position:absolute;right:14px;top:18px;width:64px;height:24px;opacity:.85}
+
+/* TWO-COL */
+.two-col{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-bottom:20px}
+.one-col{margin-bottom:20px}
+
+/* PANEL */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-sm);transition:box-shadow .18s}
+.panel:hover{box-shadow:var(--shadow-md)}
+.panel-head{padding:16px 20px;border-bottom:1px solid var(--line-2);display:flex;justify-content:space-between;align-items:center;background:linear-gradient(180deg,rgba(139,26,47,.012),transparent)}
+.panel-head h3{font-size:14px;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+.panel-head .meta{font-size:11.5px;color:var(--muted);font-weight:500}
+.panel-body{padding:0 20px 20px;min-height:60px}
+.empty-state{color:var(--muted);font-size:13px;padding:36px 0;text-align:center}
+
+/* RANKING */
+table.rank{width:100%;border-collapse:collapse;font-size:13px}
+.rank th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding:12px 8px 8px;border-bottom:1px solid var(--line-2)}
+.rank th.r{text-align:right}
+.rank td{padding:11px 8px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+.rank tr:last-child td{border-bottom:none}
+.rank td.r{text-align:right}
+.rec-cell{display:flex;align-items:center;gap:9px}
+.ava{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#FECDD3,#FDA4AF);color:#9F1239;display:grid;place-items:center;font-weight:700;font-size:10.5px;flex-shrink:0}
+.ava.v2{background:linear-gradient(135deg,#FCE7F3,#FBCFE8);color:#9D174D}
+.ava.v3{background:linear-gradient(135deg,#DCFCE7,#BBF7D0);color:#166534}
+.ava.v4{background:linear-gradient(135deg,#FEF3C7,#FDE68A);color:#92400E}
+.ava.v5{background:linear-gradient(135deg,#EDE9FE,#DDD6FE);color:#5B21B6}
+.rec-name{font-weight:600;color:var(--ink);font-size:13px}
+.rec-sub{font-size:11px;color:var(--muted)}
+.score-pill{display:inline-block;padding:3px 10px;border-radius:6px;font-weight:700;font-size:12px;font-family:'JetBrains Mono',monospace}
+.score-pill.hi{background:#ECFDF5;color:#047857}
+.score-pill.mid{background:#FFFBEB;color:#B45309}
+.score-pill.lo{background:#FEF2F2;color:#B91C1C}
+.bar-cell{display:flex;align-items:center;gap:7px;justify-content:flex-end}
+.bar-track{width:60px;height:6px;background:var(--line-2);border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;border-radius:999px;transition:width .4s}
+.rank-num{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--muted);font-size:11px;width:18px;display:inline-block}
+.rank-num.gold{color:#B45309;font-weight:800}
+
+/* BADGES */
+.ct-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;vertical-align:middle}
+.ct-pk{background:#EDE9FE;color:#5B21B6}
+.ct-fu{background:#FEF3C7;color:#92400E}
+.ct-rp{background:#DCFCE7;color:#166534}
+.ct-dc{background:#FEE2E2;color:#991B1B}
+.spill{padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:600;display:inline-block}
+.spill-status{background:var(--primary-soft);color:var(--primary)}
+.spill-action{background:#FEF2F2;color:#B91C1C;font-weight:700}
+
+/* AI PANELS */
+.ai-stack{display:flex;flex-direction:column;gap:14px}
+.ai-panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow-sm)}
+.ai-panel.top{border-color:#D1FAE5;background:linear-gradient(180deg,#F0FDF4,#fff 60%)}
+.ai-panel.low{border-color:#FECACA;background:linear-gradient(180deg,#FEF2F2,#fff 60%)}
+.ai-head{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.ai-icon{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:14px;color:white;flex-shrink:0}
+.ai-icon.top{background:linear-gradient(135deg,#34D399,#059669)}
+.ai-icon.low{background:linear-gradient(135deg,#FC8181,#B91C1C)}
+.ai-head h3{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:1px}
+.ai-head .ai-sub{font-size:11px;color:var(--muted)}
+.ai-block+.ai-block{margin-top:12px;padding-top:12px;border-top:1px solid var(--line-2)}
+.ai-panel.top .ai-block+.ai-block{border-top-color:#D1FAE5}
+.ai-panel.low .ai-block+.ai-block{border-top-color:#FECACA}
+.ai-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin-bottom:4px}
+.ai-panel.top .ai-lbl{color:#059669}
+.ai-panel.low .ai-lbl{color:#B91C1C}
+.ai-text{font-size:12px;color:var(--ink-2);line-height:1.55}
+.ai-text strong{color:var(--ink);font-weight:700}
+
+/* CALL CARDS */
+.calls-list{overflow-y:auto}
+.call-card{border-bottom:1px solid var(--line-2);transition:background .15s;position:relative}
+.call-card:last-child{border-bottom:none}
+.call-card:hover{background:rgba(139,26,47,.015)}
+.call-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(180deg,#8B1A2F,#5C0F1B);transition:width .15s}
+.call-card:hover::before{width:3px}
+
+/* CALL CARD HEADER — clickable to expand */
+.call-header{padding:14px 20px 14px 20px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.call-header-left{flex:1;min-width:0}
+.call-title-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.call-cand{font-weight:700;font-size:14px;color:var(--ink)}
+.call-vac{color:var(--ink-2);font-weight:500;font-size:13px}
+.call-dur{color:var(--muted);font-size:12px}
+.call-meta-row{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);align-items:center}
+.call-meta-row span{display:inline-flex;align-items:center;gap:3px}
+.call-score-box{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;padding:5px 12px;border-radius:8px;flex-shrink:0;white-space:nowrap}
+.call-score-box.hi{background:#ECFDF5;color:#047857}
+.call-score-box.mid{background:#FFFBEB;color:#B45309}
+.call-score-box.lo{background:#FEF2F2;color:#B91C1C}
+.call-score-box.na{background:var(--line-2);color:var(--muted)}
+.expand-icon{font-size:11px;color:var(--muted);flex-shrink:0;transition:transform .2s;margin-left:8px}
+.call-card.expanded .expand-icon{transform:rotate(180deg)}
+
+/* CALL DETAIL — expanded */
+.call-detail{display:none;padding:0 20px 16px 20px;border-top:1px solid var(--line-2)}
+.call-card.expanded .call-detail{display:block}
+
+/* CRITERIA BARS */
+.criteria-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px 12px;padding:12px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--line-2);margin-bottom:12px;margin-top:12px}
+.crit-item{display:flex;flex-direction:column;gap:3px}
+.crit-name{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crit-row{display:flex;align-items:center;gap:4px}
+.crit-bar-track{flex:1;height:4px;background:var(--line-2);border-radius:999px;overflow:hidden}
+.crit-bar-fill{height:100%;border-radius:999px}
+.crit-val{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:var(--ink-2);min-width:22px;text-align:right}
+
+/* COACH TIP */
+.coach-tip{padding:10px 13px;border-radius:8px;background:linear-gradient(135deg,#F0FDF4,#ECFDF5);border-left:3px solid #059669;font-size:12.5px;color:#064E3B;line-height:1.55;margin-bottom:12px}
+.coach-tip-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#059669;margin-bottom:4px}
+.summary-tip{background:linear-gradient(135deg,#FAF7F8,#F5EEF0);border-color:var(--primary);color:var(--ink-2)}
+.summary-tip .coach-tip-label{color:var(--primary)}
+
+/* RECORDING BUTTON */
+.rec-btn{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#fff;text-decoration:none;padding:9px 18px;border-radius:9px;background:linear-gradient(135deg,#8B1A2F,#5C0F1B);transition:all .18s;margin-top:10px;box-shadow:0 2px 8px rgba(92,15,27,.3)}
+.rec-btn:hover{transform:translateY(-2px);box-shadow:0 5px 16px rgba(92,15,27,.4);color:#fff;text-decoration:none}
+.rec-btn:active{transform:scale(.97)}
+.rec-btn svg{flex-shrink:0}
+
+/* SKELETON */
+.skeleton{display:inline-block;background:linear-gradient(90deg,#E2E8F0 0%,#F1F5F9 50%,#E2E8F0 100%);background-size:200% 100%;border-radius:4px;animation:skl 1.4s infinite}
+@keyframes skl{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.sk-line{height:20px;width:55%}
+.footnote{text-align:center;color:var(--muted);font-size:11px;margin-top:32px;padding-top:18px;border-top:1px solid var(--line)}
+
+@media(max-width:1200px){.kpi-row{grid-template-columns:repeat(2,1fr)!important}.two-col{grid-template-columns:1fr}}
+@media(max-width:700px){.topbar{flex-direction:column;gap:10px;padding:14px 16px}.wrap{padding:16px 14px 40px}.kpi-row{grid-template-columns:repeat(2,1fr)!important}.criteria-grid{grid-template-columns:repeat(5,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="logo">NOWIMA</div>
+    <div class="brand-text">
+      <div class="b1">Recruitment Analytics</div>
+      <div class="b2">Centrum Operacyjne Rekrutacji · v2.1</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="pill live" id="statusPill">AI ANALYSIS LIVE</span>
+    <span id="lastUpdated" style="font-size:12px;color:rgba(255,245,247,.7)">—</span>
+    <button class="refresh-btn" id="refreshBtn">↻ Odśwież</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="page-head">
+    <div>
+      <h1>Dashboard Rekrutacji</h1>
+      <div class="sub">Analiza rozmów · auto-refresh co 5 min · GPT-4o mini</div>
+    </div>
+    <div class="tabs" id="dateTabs">
+      <div class="tab active" data-range="today">Dziś</div>
+      <div class="tab" data-range="week">Tydzień</div>
+      <div class="tab" data-range="month">Miesiąc</div>
+      <div class="tab" id="dateRangeBtn" data-range="custom">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="dateRangeLabel">Zakres</span>
+      </div>
+    </div>
+    <div class="date-popup" id="datePopup">
+      <div class="date-popup-row">
+        <div class="date-popup-field"><label>Od</label><input type="date" id="dateFromInput"></div>
+        <div class="date-popup-field"><label>Do</label><input type="date" id="dateToInput"></div>
+      </div>
+      <div class="date-popup-actions">
+        <button class="date-btn date-btn-sec" id="dateClearBtn">Wyczyść</button>
+        <button class="date-btn date-btn-pri" id="dateApplyBtn">Zastosuj</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="error-banner" id="errorBanner">
+    <div class="e-icon">!</div>
+    <div><div style="font-weight:600">Błąd połączenia z Supabase</div><div id="errorBody" style="font-size:12px;margin-top:2px">—</div></div>
+  </div>
+
+  <!-- KPI ROW 1 — статистика дзвінків -->
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
+    <div class="kpi"><div class="label">Wszystkie połączenia</div><div class="value num" id="kpiAllCalls"><span class="skeleton sk-line"></span></div><div class="kpi-sub" id="kpiAllCallsSub">łącznie z krótkimi i nieudanymi</div><svg class="spark" viewBox="0 0 64 24" fill="none" id="sparkAllCalls"></svg></div>
+    <div class="kpi k-hot"><div class="label">Rozmowy ≥ 1 min</div><div class="value num" id="kpiContacts"><span class="skeleton sk-line"></span></div><div class="kpi-sub" id="kpiContactsSub">oceniane przez AI</div><svg class="spark" viewBox="0 0 64 24" fill="none" id="sparkContacts"></svg></div>
+    <div class="kpi k-action"><div class="label">Skuteczność dodzwonienia</div><div class="value num" id="kpiSuccessRate"><span class="skeleton sk-line"></span></div><div class="kpi-sub" id="kpiSuccessRateSub">rozmów ≥1 min z wszystkich</div></div>
+  </div>
+  <!-- KPI ROW 2 — якість -->
+  <div class="kpi-row" style="grid-template-columns:repeat(2,1fr);margin-bottom:24px">
+    <div class="kpi k-score"><div class="label">Średnia ocena</div><div class="value num" id="kpiAvgScore"><span class="skeleton sk-line"></span></div><div class="kpi-sub" id="kpiAvgScoreSub">—</div><svg class="spark" viewBox="0 0 64 24" fill="none" id="sparkScore"></svg></div>
+    <div class="kpi k-comp"><div class="label">Zgodność skryptu</div><div class="value num" id="kpiCompliance"><span class="skeleton sk-line"></span></div><div class="kpi-sub" id="kpiComplianceSub">średnia zespołu</div><svg class="spark" viewBox="0 0 64 24" fill="none" id="sparkCompliance"></svg></div>
+  </div>
+
+  <!-- RANKING + AI COACH -->
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-head"><h3>Ranking rekruterów</h3><div class="meta" id="rankingMeta">sortowanie wg oceny</div></div>
+      <div class="panel-body">
+        <table class="rank">
+          <thead><tr><th style="width:22px"></th><th>Rekruter</th><th class="r">1.Kontakt</th><th class="r">Czas ≥1min</th><th class="r">Czas łącznie</th><th class="r">Konwersja</th><th class="r">Śr. ocena</th><th class="r">Skrypt %</th></tr></thead>
+          <tbody id="rankingBody"><tr><td colspan="8" class="empty-state" style="padding:24px 0">Ładowanie...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ai-stack">
+      <div class="ai-panel top">
+        <div class="ai-head"><div class="ai-icon top">★</div><div><h3>Top performer</h3><div class="ai-sub" id="aiTopSub">—</div></div></div>
+        <div id="aiTopBody"><div class="empty-state" style="padding:14px 0">Ładowanie...</div></div>
+      </div>
+      <div class="ai-panel low">
+        <div class="ai-head"><div class="ai-icon low">↓</div><div><h3>Wymaga wsparcia</h3><div class="ai-sub" id="aiLowSub">—</div></div></div>
+        <div id="aiLowBody"><div class="empty-state" style="padding:14px 0">Ładowanie...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALL CALLS -->
+  <div class="one-col">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Wszystkie rozmowy</h3>
+        <div class="meta" id="callsMeta">—</div>
+      </div>
+      <div style="padding:0">
+        <div class="calls-list" id="callsList"><div class="empty-state">Ładowanie...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">NOWIMA · Recruitment Analytics v2.1 · Supabase · GPT-4o mini · auto-refresh 5 min</div>
+</div>
+
+<script>
+const SUPABASE_URL='https://gykuaonjraxtpmhxovgu.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_jPbCWopUUwypPYq9HSAAMw_lJNYe6Uv';
+const TABLE='recruitment_calls';
+const AUTO_REFRESH_MS=5*60*1000;
+const CRIT_NAMES=['Przywitanie','Struktura','Dokumenty','Doświadczenie','Referrals','Firma','Wakat','Odpowiedzi','Obiekcje','Zamknięcie'];
+
+const state={allCalls:[],allCallsInRange:[],filteredCalls:[],dateRange:'today',customFrom:null,customTo:null};
+
+/* ── FETCH ── */
+async function fetchCalls(){
+  hideError();
+  try{
+    // Пагінація — завантажуємо всі записи по 1000
+    const PAGE=1000;
+    let all=[],offset=0,done=false;
+    while(!done){
+      const res=await fetch(
+        `${SUPABASE_URL}/rest/v1/${TABLE}?select=*&order=call_date.desc&limit=${PAGE}&offset=${offset}`,
+        {headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`,'Range-Unit':'items','Prefer':'count=none'}}
+      );
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const chunk=await res.json();
+      if(!Array.isArray(chunk)||chunk.length===0){done=true;break;}
+      all=[...all,...chunk];
+      if(chunk.length<PAGE){done=true;}else{offset+=PAGE;}
+    }
+    state.allCalls=all;
+    applyFilter();renderAll();
+    document.getElementById('lastUpdated').textContent=new Date().toLocaleString('pl-PL',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    setStatus('live');
+  }catch(err){showError(err.message);setStatus('error')}
+}
+function showError(m){document.getElementById('errorBody').textContent=m;document.getElementById('errorBanner').classList.add('show')}
+function hideError(){document.getElementById('errorBanner').classList.remove('show')}
+function setStatus(s){const p=document.getElementById('statusPill');if(s==='error'){p.className='pill error';p.textContent='BŁĄD POŁĄCZENIA'}else{p.className='pill live';p.textContent='AI ANALYSIS LIVE'}}
+
+/* ── FILTER ── */
+function applyFilter(){
+  const now=new Date();let from=null,to=null;
+  if(state.dateRange==='today'){from=new Date(now.getFullYear(),now.getMonth(),now.getDate())}
+  else if(state.dateRange==='week'){from=new Date(now-7*864e5)}
+  else if(state.dateRange==='month'){from=new Date(now-30*864e5)}
+  else if(state.dateRange==='custom'){
+    if(state.customFrom)from=new Date(state.customFrom+'T00:00:00');
+    if(state.customTo)to=new Date(state.customTo+'T23:59:59');
+  }
+  // Всі дзвінки в діапазоні (включно з короткими <1хв) — для статистики
+  state.allCallsInRange=state.allCalls.filter(c=>{
+    const d=new Date(c.call_date);
+    if(from&&d<from)return false;
+    if(to&&d>to)return false;
+    return true;
+  });
+  state.filteredCalls=state.allCalls.filter(c=>{
+    const d=new Date(c.call_date);
+    if(from&&d<from)return false;
+    if(to&&d>to)return false;
+    // виключаємо невдалі/короткі дзвінки
+    if(c.skip===true)return false;
+    if(c.call_duration_sec&&c.call_duration_sec<60)return false;
+    return true;
+  });
+}
+
+/* ── HELPERS ── */
+function isHot(c){return(c.candidate_level||'').toLowerCase().includes('hot')}
+function avg(a,k){const v=a.map(x=>Number(x[k])).filter(v=>!isNaN(v)&&v>0);return v.length?v.reduce((a,b)=>a+b)/v.length:null}
+function spc(s){return s==null?'':s>=7?'hi':s>=5?'mid':'lo'}
+function esc(s){if(s==null)return'';return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function relDate(iso){if(!iso)return'—';const d=new Date(iso),now=new Date(),h=(now-d)/36e5;if(h<1)return`${Math.round((now-d)/6e4)} min temu`;if(h<24)return`${Math.round(h)}h temu`;if(h<168)return`${Math.round(h/24)} dni temu`;return d.toLocaleDateString('pl-PL',{day:'2-digit',month:'short'})}
+function timeStr(iso){if(!iso)return'—';return new Date(iso).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'})}
+function ini(n){if(!n||n==='Unknown')return'?';const p=String(n).trim().split(/\s+/);return(p[0]?.[0]||'')+(p[1]?.[0]||'')}
+function avar(n){if(!n)return'';return['','v2','v3','v4','v5'][String(n).split('').reduce((s,c)=>s+c.charCodeAt(0),0)%5]}
+function toArr(v){if(!v)return[];if(Array.isArray(v))return v;if(typeof v==='string'){try{const p=JSON.parse(v);return Array.isArray(p)?p:[]}catch{return[]}}return[]}
+function fmt(n,d=0){if(n==null||isNaN(n))return'—';return Number(n).toFixed(d)}
+function ctBadge(ct){const m={'PIERWSZY_KONTAKT':['ct-pk','1. kontakt'],'DISQUALIFIED_CONTACT':['ct-dc','Brak dok.'],'FOLLOW_UP':['ct-fu','Follow-up'],'ROZMOWA_PRZYCHODZACA':['ct-rp','Przychodzący']};const[cls,lbl]=(ct&&m[ct])||['ct-pk',ct||''];return lbl?`<span class="ct-badge ${cls}">${esc(lbl)}</span>`:''}
+
+/* ── SPARKLINES ── */
+function sparkSeries(calls,type){
+  const days=7,now=new Date();
+  const bk=Array.from({length:days},(_,i)=>{const d=new Date(now-(days-1-i)*864e5);d.setHours(0,0,0,0);return{day:d,items:[]}});
+  calls.forEach(c=>{const t=new Date(c.call_date),ds=new Date(t.getFullYear(),t.getMonth(),t.getDate()),b=bk.find(x=>x.day.getTime()===ds.getTime());if(b)b.items.push(c)});
+  return bk.map(b=>{
+    if(type==='count')return b.items.length;
+    if(type==='score')return avg(b.items,'score')||0;
+    if(type==='comp')return avg(b.items,'script_compliance')||0;
+    if(type==='hot')return b.items.filter(isHot).length;
+    if(type==='action')return b.items.filter(c=>c.manager_action_required&&!c.manager_reviewed).length;
+    return 0;
+  });
+}
+function renderSpark(id,vals,color){
+  const svg=document.getElementById(id);if(!svg)return;
+  const max=Math.max(...vals,1),w=64,h=24,pad=2,sx=vals.length>1?(w-pad*2)/(vals.length-1):0;
+  const pts=vals.map((v,i)=>`${(pad+i*sx).toFixed(1)},${(h-pad-(v/max)*(h-pad*2)).toFixed(1)}`);
+  const lp=`M${pts.join(' L')}`;
+  svg.innerHTML=`<path d="${lp} L${w-pad},${h} L${pad},${h} Z" fill="${color}" fill-opacity=".1"/><path d="${lp}" stroke="${color}" stroke-width="1.5" fill="none"/>`;
+}
+
+/* ── KPI ── */
+function renderKPI(){
+  const allInRange=state.allCallsInRange||[];
+  const calls=state.filteredCalls; // ≥1 хв, без skip
+  const totalAll=allInRange.length;
+  const evaluated=calls.length;
+  const pct=totalAll>0?Math.round(evaluated/totalAll*100):0;
+  const pctColor=pct>=60?'#059669':pct>=40?'#D97706':'#DC2626';
+  const scored=calls.filter(c=>c.score>0).length;
+  const aScore=avg(calls,'score'),aComp=avg(calls,'script_compliance');
+
+  // Блок 1 — всі дзвінки
+  document.getElementById('kpiAllCalls').textContent=totalAll;
+  document.getElementById('kpiAllCallsSub').textContent='łącznie z krótkimi i nieudanymi';
+
+  // Блок 2 — дзвінки ≥1 хв
+  document.getElementById('kpiContacts').textContent=evaluated;
+  document.getElementById('kpiContactsSub').textContent='oceniane przez AI';
+
+  // Блок 3 — % успішності
+  document.getElementById('kpiSuccessRate').innerHTML=`${pct}<span class="unit">%</span>`;
+  document.getElementById('kpiSuccessRateSub').innerHTML=`<span style="color:${pctColor};font-weight:700">${evaluated} z ${totalAll}</span> rozmów ≥1 min`;
+
+  // Якість
+  document.getElementById('kpiAvgScore').innerHTML=aScore==null?'—':`${fmt(aScore,1)}<span class="unit">/10</span>`;
+  document.getElementById('kpiAvgScoreSub').textContent=`z ${scored} ocenionych`;
+  document.getElementById('kpiCompliance').innerHTML=aComp==null?'—':`${fmt(aComp,0)}<span class="unit">%</span>`;
+
+  renderSpark('sparkAllCalls',sparkSeries(allInRange,'count'),'#64748B');
+  renderSpark('sparkContacts',sparkSeries(calls,'count'),'#8B1A2F');
+  renderSpark('sparkScore',sparkSeries(calls,'score'),'#10B981');
+  renderSpark('sparkCompliance',sparkSeries(calls,'comp'),'#8B5CF6');
+}
+
+/* ── RANKING ── */
+function fmtTime(sec){if(!sec||sec<=0)return'0m';const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);return h>0?`${h}g ${m}m`:`${m}m`;}
+
+function renderRanking(){
+  // Всі дзвінки в діапазоні (включно з короткими) — для конверсії
+  const allInRange=state.allCallsInRange||[];
+  const byRAll={};
+  allInRange.forEach(c=>{const n=c.recruiter_name||'Unknown';if(n==='Unknown'||n==='Nieznany')return;if(!byRAll[n])byRAll[n]={totalCalls:0,totalSec:0};byRAll[n].totalCalls++;byRAll[n].totalSec+=(parseInt(c.call_duration_sec)||0);});
+
+  // Тільки ≥1хв — для оцінки і часу
+  const byR={};
+  state.filteredCalls.forEach(c=>{const n=c.recruiter_name||'Unknown';if(n==='Unknown'||n==='Nieznany')return;if(!byR[n])byR[n]={name:n,calls:[],secEval:0};byR[n].calls.push(c);byR[n].secEval+=(parseInt(c.call_duration_sec)||0);});
+
+  const rows=Object.values(byR).map(r=>{
+    // Оцінка ТІЛЬКИ по PIERWSZY_KONTAKT
+    const pkCalls=r.calls.filter(c=>c.call_type==='PIERWSZY_KONTAKT'||c.call_type==='FIRST_CONTACT');
+    const aS=avg(pkCalls,'score');
+    const aC=avg(pkCalls,'script_compliance');
+    const allR=byRAll[r.name]||{totalCalls:0,totalSec:0};
+    const conv=allR.totalCalls>0?Math.round(r.calls.length/allR.totalCalls*100):0;
+    const convColor=conv>=60?'#059669':conv>=40?'#D97706':'#DC2626';
+    return{name:r.name,pkCount:pkCalls.length,evalCount:r.calls.length,totalCount:allR.totalCalls,secEval:r.secEval,secTotal:allR.totalSec,conv,convColor,aS,aC};
+  }).filter(r=>r.name).sort((a,b)=>(b.aS||0)-(a.aS||0)).slice(0,10);
+
+  const tb=document.getElementById('rankingBody');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="8" class="empty-state" style="padding:24px 0">Brak danych</td></tr>';return}
+  tb.innerHTML=rows.map((r,i)=>{
+    const cls=spc(r.aS),bw=r.aC==null?0:Math.min(100,Math.round(r.aC));
+    const bc=bw>=70?'linear-gradient(90deg,#059669,#10B981)':bw>=50?'linear-gradient(90deg,#D97706,#F59E0B)':'linear-gradient(90deg,#B91C1C,#DC2626)';
+    return`<tr>
+      <td><span class="${i===0?'rank-num gold':'rank-num'}">${String(i+1).padStart(2,'0')}</span></td>
+      <td><div class="rec-cell"><div class="ava ${avar(r.name)}">${ini(r.name).toUpperCase()}</div><div><div class="rec-name">${esc(r.name)}</div><div class="rec-sub">${r.pkCount} 1.kontakt · ${r.evalCount} ≥1min · ${r.totalCount} łącznie</div></div></div></td>
+      <td class="r num">${r.pkCount}</td>
+      <td class="r" style="font-size:12px;font-weight:600;color:var(--ink-2)">${fmtTime(r.secEval)}</td>
+      <td class="r" style="font-size:12px;font-weight:600;color:var(--muted)">${fmtTime(r.secTotal)}</td>
+      <td class="r"><span style="font-size:13px;font-weight:700;color:${r.convColor}">${r.conv}%</span><div style="font-size:10px;color:var(--muted)">${r.evalCount}/${r.totalCount}</div></td>
+      <td class="r">${r.aS==null?'—':`<span class="score-pill ${cls}">${fmt(r.aS,1)}</span>`}</td>
+      <td class="r"><div class="bar-cell"><div class="bar-track"><div class="bar-fill" style="width:${bw}%;background:${bc}"></div></div><span class="num" style="font-size:12px;font-weight:600">${r.aC==null?'—':bw+'%'}</span></div></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('rankingMeta').textContent=`${rows.length} rekruterów · ocena tylko za 1. kontakt`;
+}
+
+/* ── AI COACH ── */
+function renderAI(){
+  const byR={};
+  state.filteredCalls.forEach(c=>{const n=c.recruiter_name||'Unknown';if(n==='Unknown')return;if(!byR[n])byR[n]={name:n,calls:[]};byR[n].calls.push(c)});
+  const list=Object.values(byR).map(r=>({...r,aS:avg(r.calls,'score'),aC:avg(r.calls,'script_compliance'),count:r.calls.length})).filter(r=>r.count>=1&&r.aS!=null).sort((a,b)=>b.aS-a.aS);
+
+  const top=list[0];
+  if(top){
+    document.getElementById('aiTopSub').textContent=`${top.name} · ${top.count} rozmów · śr. ${fmt(top.aS,1)}/10`;
+    const tips=top.calls.map(c=>c.coach_tip).filter(t=>t&&!t.toLowerCase().includes('transcript'));
+    document.getElementById('aiTopBody').innerHTML=`
+      <div class="ai-block"><div class="ai-lbl">Wyniki</div><div class="ai-text">Najwyższa śr. <strong>${fmt(top.aS,1)}/10</strong>. Skrypt: <strong>${fmt(top.aC||0,0)}%</strong>. Hot: <strong>${top.calls.filter(isHot).length}</strong>.</div></div>
+      ${tips.length?`<div class="ai-block"><div class="ai-lbl">Wskazówka AI</div><div class="ai-text">${esc(tips[0])}</div></div>`:''}`;
+  }else{document.getElementById('aiTopBody').innerHTML='<div class="empty-state" style="padding:12px 0">Brak danych</div>';document.getElementById('aiTopSub').textContent='—'}
+
+  const low=list.length>1?list[list.length-1]:(list[0]&&list[0].aS<6?list[0]:null);
+  if(low&&low.aS<7&&(!top||low.name!==top.name)){
+    document.getElementById('aiLowSub').textContent=`${low.name} · ${low.count} rozmów · śr. ${fmt(low.aS,1)}/10`;
+    const tips=low.calls.map(c=>c.coach_tip).filter(t=>t&&!t.toLowerCase().includes('transcript'));
+    const na=low.calls.filter(c=>c.manager_action_required).length;
+    document.getElementById('aiLowBody').innerHTML=`
+      <div class="ai-block"><div class="ai-lbl">Sytuacja</div><div class="ai-text">Śr. <strong>${fmt(low.aS,1)}/10</strong>${na?` · <strong>${na} rozmów</strong> wymaga przeglądu`:''}</div></div>
+      ${tips.length?`<div class="ai-block"><div class="ai-lbl">Co poprawić</div><div class="ai-text">${esc(tips.slice(0,2).join(' '))}</div></div>`:''}
+      <div class="ai-block"><div class="ai-lbl">Rekomendacja</div><div class="ai-text">Przesłuchaj rozmowy razem z rekruterem i omów wskazówki AI.</div></div>`;
+  }else{document.getElementById('aiLowBody').innerHTML='<div class="empty-state" style="padding:12px 0">Wszyscy powyżej progu 🎉</div>';document.getElementById('aiLowSub').textContent='—'}
+}
+
+/* ── CALL CARDS ── */
+function renderCalls(){
+  const list=[...state.filteredCalls].sort((a,b)=>new Date(b.call_date)-new Date(a.call_date));
+  const container=document.getElementById('callsList');
+  const meta=document.getElementById('callsMeta');
+  if(!list.length){container.innerHTML='<div class="empty-state">Brak rozmów w tym okresie</div>';meta.textContent='0 rozmów';return}
+
+  container.innerHTML=list.map((c,idx)=>{
+    const candName=c.candidate_name&&c.candidate_name!=='Unknown'?c.candidate_name:(c.candidate_phone||'Nieznany');
+    const vacancy=c.vacancy&&c.vacancy!=='Unknown'?c.vacancy:null;
+    const score=(typeof c.score==='number'&&c.score>0)?c.score:null;
+    const comp=(typeof c.script_compliance==='number'&&c.script_compliance>0)?c.script_compliance:null;
+    const dur=c.call_duration_sec?Math.round(c.call_duration_sec/60):null;
+    const sc=score==null?'na':spc(score);
+    const needsAction=c.manager_action_required&&!c.manager_reviewed;
+
+    // Criteria bars
+    const criteria=toArr(c.criteria);
+    let critHtml='';
+    if(criteria.length>0){
+      const items=criteria.filter(cr=>cr.applicable!==false).map(cr=>{
+        const s=cr.score!=null?Math.round(cr.score):0;
+        const color=s>=70?'#059669':s>=40?'#D97706':'#DC2626';
+        const name=CRIT_NAMES[(cr.point||1)-1]||'';
+        return`<div class="crit-item"><div class="crit-name" title="${esc(cr.name||name)}">${esc(name)}</div><div class="crit-row"><div class="crit-bar-track"><div class="crit-bar-fill" style="width:${s}%;background:${color}"></div></div><span class="crit-val">${s}%</span></div></div>`;
+      });
+      if(items.length)critHtml=`<div class="criteria-grid">${items.join('')}</div>`;
+    }
+
+    // Coach tip / summary
+    const tip=c.coach_tip&&!c.coach_tip.toLowerCase().includes('transcript')?c.coach_tip:null;
+    const summ=c.summary&&!c.summary.toLowerCase().includes('transcript')?c.summary:null;
+    let tipHtml='';
+    if(tip)tipHtml=`<div class="coach-tip"><div class="coach-tip-label">Wskazówka dla rekrutera</div>${esc(tip)}</div>`;
+    else if(summ)tipHtml=`<div class="coach-tip summary-tip"><div class="coach-tip-label">Podsumowanie AI</div>${esc(summ)}</div>`;
+
+    // Recording link — Unitalk recording_url (внизу картки, без транскрипту)
+    const recUrl = c.recording_url || null;
+    const recHtml = recUrl
+      ? `<a class="rec-btn" href="${esc(recUrl)}" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 17 12 10 16 10 8" fill="currentColor" stroke="none"/></svg>
+          Odsłuchaj rozmowę
+        </a>`
+      : `<div style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-style:italic">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 17 12 10 16 10 8"/></svg>
+          Nagranie niedostępne (dodaj recording_url w n8n)
+        </div>`;
+
+    return`<div class="call-card" id="card-${idx}">
+      <div class="call-header" onclick="toggleCard(${idx})">
+        <div class="call-header-left">
+          <div class="call-title-row">
+            <span class="call-cand">${esc(candName)}</span>
+            ${vacancy?`<span class="call-vac">· ${esc(vacancy)}</span>`:''}
+            ${dur?`<span class="call-dur">· ${dur} min</span>`:''}
+            ${ctBadge(c.call_type)}
+            ${needsAction?'<span class="spill spill-action">⚠ Akcja</span>':''}
+          </div>
+          <div class="call-meta-row">
+            <span>👤 ${esc(c.recruiter_name||'—')}</span>
+            <span>🕐 ${relDate(c.call_date)} · ${timeStr(c.call_date)}</span>
+            ${comp!=null?`<span>📋 ${fmt(comp,0)}% skryptu</span>`:''}
+            ${c.status&&c.status!=='Unknown'?`<span class="spill spill-status">${esc(c.status)}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="call-score-box ${sc}">${score!=null?fmt(score,1)+'/10':'—'}</div>
+          <span class="expand-icon">▼</span>
+        </div>
+      </div>
+      <div class="call-detail">
+        ${critHtml}
+        ${tipHtml}
+        ${recHtml}
+      </div>
+    </div>`;
+  }).join('');
+
+  meta.textContent=`${list.length} rozmów (≥1 min) · ${(state.allCallsInRange||[]).length} wszystkich · sortowane od najnowszej`;
+}
+
+/* ── EXPAND/COLLAPSE ── */
+function toggleCard(idx){
+  document.getElementById('card-'+idx).classList.toggle('expanded');
+}
+
+/* ── RENDER ALL ── */
+function renderAll(){renderKPI();renderRanking();renderAI();renderCalls()}
+
+/* ── DATE TABS ── */
+function updateDateLabel(){
+  const l=document.getElementById('dateRangeLabel');
+  if(state.dateRange==='custom'&&state.customFrom&&state.customTo)l.textContent=`${state.customFrom.slice(5).replace('-','.')}–${state.customTo.slice(5).replace('-','.')}`;
+  else if(state.dateRange==='custom'&&state.customFrom)l.textContent=`od ${state.customFrom.slice(5).replace('-','.')}`;
+  else l.textContent='Zakres';
+}
+
+document.addEventListener('click',e=>{
+  if(e.target.closest('#dateRangeBtn')){
+    e.stopPropagation();
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById('dateRangeBtn').classList.add('active');
+    document.getElementById('datePopup').classList.toggle('show');
+    if(state.customFrom)document.getElementById('dateFromInput').value=state.customFrom;
+    if(state.customTo)document.getElementById('dateToInput').value=state.customTo;
+    return;
+  }
+  if(e.target.id==='dateApplyBtn'){
+    const f=document.getElementById('dateFromInput').value,t=document.getElementById('dateToInput').value;
+    if(!f&&!t){alert('Wybierz datę');return}
+    state.customFrom=f||null;state.customTo=t||null;state.dateRange='custom';
+    updateDateLabel();applyFilter();renderAll();
+    document.getElementById('datePopup').classList.remove('show');return;
+  }
+  if(e.target.id==='dateClearBtn'){
+    document.getElementById('dateFromInput').value='';document.getElementById('dateToInput').value='';
+    state.customFrom=null;state.customTo=null;updateDateLabel();return;
+  }
+  if(e.target.closest('#datePopup'))return;
+  document.getElementById('datePopup').classList.remove('show');
+  const tab=e.target.closest('.tab:not(#dateRangeBtn)');
+  if(tab){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');state.dateRange=tab.dataset.range;
+    state.customFrom=null;state.customTo=null;
+    updateDateLabel();applyFilter();renderAll();
+  }
+  if(e.target.id==='refreshBtn')fetchCalls();
+});
+
+fetchCalls();
+setInterval(fetchCalls,AUTO_REFRESH_MS);
+</script>
+</body>
+</html>
